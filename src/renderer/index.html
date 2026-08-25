@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'">
+  <title>浮待 Todo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="titlebar">
+      <div class="brand">
+        <span class="brand-mark">✓</span>
+        <div>
+          <strong>浮待</strong>
+          <small>中文截图待办</small>
+        </div>
+      </div>
+      <div class="window-actions">
+        <button id="pinBtn" class="icon-btn" title="置顶">⌖</button>
+        <button id="settingsBtn" class="icon-btn" title="设置">⚙</button>
+        <button id="minimizeBtn" class="icon-btn" title="最小化">−</button>
+        <button id="hideBtn" class="icon-btn" title="隐藏到托盘">×</button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div>
+        <p id="todayLabel" class="eyebrow"></p>
+        <h1><span id="pendingCount">0</span> 件事，慢慢来。</h1>
+      </div>
+      <button id="captureBtn" class="capture-btn"><span>⌗</span> 截图生成待办</button>
+    </section>
+
+    <section class="quick-add">
+      <span class="plus">＋</span>
+      <input id="quickInput" maxlength="160" placeholder="输入待办，如“明天下午三点发报价”">
+      <button id="quickAddBtn">添加</button>
+    </section>
+
+    <nav id="tabs" class="tabs" aria-label="待办分类">
+      <button data-section="today" class="active">今天 <span>0</span></button>
+      <button data-section="week">本周 <span>0</span></button>
+      <button data-section="later">以后 <span>0</span></button>
+      <button data-section="waiting">等待 <span>0</span></button>
+      <button data-section="completed">完成 <span>0</span></button>
+    </nav>
+
+    <section id="taskList" class="task-list" aria-live="polite"></section>
+
+    <footer class="footer-tip">
+      <span class="status-dot"></span>
+      <span id="shortcutLabel">Ctrl + Shift + A 随时截图</span>
+    </footer>
+  </main>
+
+  <div id="reviewModal" class="modal" aria-hidden="true">
+    <section class="modal-card review-card">
+      <header class="modal-header">
+        <div>
+          <p class="eyebrow">截图识别</p>
+          <h2>确认后加入待办</h2>
+        </div>
+        <button class="icon-btn modal-close" data-close="reviewModal">×</button>
+      </header>
+      <div id="reviewLoading" class="loading-state">
+        <span class="spinner"></span>
+        <strong>正在识别中文并整理…</strong>
+        <small>优先使用 Umi-OCR，失败时自动尝试 Windows OCR</small>
+      </div>
+      <div id="reviewContent" class="review-content hidden">
+        <img id="capturePreview" class="capture-preview" alt="原始截图">
+        <div class="ocr-row">
+          <span id="ocrEngine" class="badge">OCR</span>
+          <button id="restructureBtn" class="text-btn">按修改后的文字重新整理</button>
+        </div>
+        <textarea id="ocrText" rows="4" placeholder="没有识别到文字时，可在这里手动输入或粘贴"></textarea>
+        <p id="reviewWarning" class="warning hidden"></p>
+        <div id="reviewTasks" class="review-tasks"></div>
+        <button id="addReviewTaskBtn" class="ghost-wide">＋ 再加一条</button>
+        <div class="modal-actions">
+          <button class="secondary" data-close="reviewModal">取消</button>
+          <button id="saveReviewBtn" class="primary">全部加入待办</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="editModal" class="modal" aria-hidden="true">
+    <section class="modal-card compact-card">
+      <header class="modal-header">
+        <div><p class="eyebrow">编辑</p><h2>待办详情</h2></div>
+        <button class="icon-btn modal-close" data-close="editModal">×</button>
+      </header>
+      <form id="editForm" class="form-grid">
+        <input id="editId" type="hidden">
+        <label class="full">标题<input id="editTitle" maxlength="100" required></label>
+        <label>截止时间<input id="editDueAt" type="datetime-local"></label>
+        <label>优先级<select id="editPriority"><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select></label>
+        <label>分类<select id="editCategory"><option>工作</option><option>生活</option><option>学习</option><option>其他</option><option>等待他人</option></select></label>
+        <label class="full">备注<textarea id="editNotes" rows="4"></textarea></label>
+        <div class="modal-actions full">
+          <button type="button" class="danger" id="deleteTaskBtn">删除</button>
+          <span class="spacer"></span>
+          <button type="button" class="secondary" data-close="editModal">取消</button>
+          <button type="submit" class="primary">保存</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="settingsModal" class="modal" aria-hidden="true">
+    <section class="modal-card settings-card">
+      <header class="modal-header sticky">
+        <div><p class="eyebrow">偏好设置</p><h2>设置</h2></div>
+        <button class="icon-btn modal-close" data-close="settingsModal">×</button>
+      </header>
+      <form id="settingsForm" class="settings-form">
+        <div class="settings-scroll">
+          <section class="settings-section">
+            <h3 class="settings-section-title">窗口与外观</h3>
+            <div class="settings-group">
+              <label>主题风格<select id="themeStyle"><option value="green">绿色办公</option><option value="gray">极简灰</option><option value="custom">自定义颜色</option></select></label>
+              <label id="customThemeRow" class="hidden">自定义主题色<input id="customThemeColor" type="color" value="#2f7658"></label>
+              <label class="switch-row"><span><strong>始终置顶</strong><small>让待办保持在其他窗口上方</small></span><input id="alwaysOnTop" type="checkbox"></label>
+              <label class="switch-row"><span><strong>开机启动</strong><small>登录 Windows 后自动在托盘运行</small></span><input id="launchAtLogin" type="checkbox"></label>
+              <label>玻璃效果<select id="glassMaterial"><option value="acrylic">透明液态玻璃</option><option value="mica">柔和云母</option><option value="none">普通半透明（兼容）</option></select></label>
+              <label>着色浓度 <output id="glassTintValue">34%</output><input id="glassTint" type="range" min="12" max="82" step="1"></label>
+              <p class="field-hint">低浓度更通透，高浓度更易阅读；只调整玻璃着色，不降低文字清晰度。</p>
+              <label>截图快捷键<select id="shortcut"><option value="CommandOrControl+Shift+A">Ctrl + Shift + A</option><option value="CommandOrControl+Alt+A">Ctrl + Alt + A</option><option value="Alt+Shift+A">Alt + Shift + A</option><option value="CommandOrControl+Shift+S">Ctrl + Shift + S</option></select></label>
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <h3 class="settings-section-title">中文 OCR · 本地识别</h3>
+            <div class="settings-group">
+              <label>识别方式<select id="ocrMode"><option value="auto">自动：Umi-OCR → Windows OCR</option><option value="umi">只用 Umi-OCR</option><option value="windows">只用 Windows OCR</option></select></label>
+              <label>Umi-OCR 地址<input id="ocrEndpoint" type="url" placeholder="http://127.0.0.1:1224"></label>
+              <div class="inline-actions"><button id="testOcrBtn" type="button" class="secondary">测试 Umi-OCR</button><button id="downloadUmiBtn" type="button" class="text-btn">下载 Umi-OCR ↗</button></div>
+              <p class="field-hint">自动模式会优先使用 Umi-OCR，不可用时切换到 Windows 中文 OCR。</p>
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <h3 class="settings-section-title">AI 智能整理 · 可选</h3>
+            <div class="settings-group">
+              <label class="switch-row"><span><strong>启用 AI</strong><small>关闭时仍可使用 OCR + 本地规则</small></span><input id="aiEnabled" type="checkbox"></label>
+              <label>AI 服务商<select id="aiProvider"><option value="deepseek">DeepSeek（中文推荐）</option><option value="openai">OpenAI</option><option value="custom">其他兼容接口</option></select></label>
+              <label>接口类型<select id="aiApiStyle"><option value="responses">OpenAI Responses API</option><option value="chat_completions">兼容 Chat Completions</option></select></label>
+              <label>API 地址<input id="aiBaseUrl" type="url" placeholder="https://api.openai.com/v1"></label>
+              <label>模型<input id="aiModel" placeholder="gpt-5-mini"></label>
+              <label>API Key<input id="aiApiKey" type="password" autocomplete="off" placeholder="未设置"></label>
+              <label class="clear-key"><input id="clearAiKey" type="checkbox"> 清除已保存的 API Key</label>
+              <div class="inline-actions"><button id="testAiBtn" type="button" class="secondary">测试 AI 接口</button><button id="getAiKeyBtn" type="button" class="text-btn">获取 API Key ↗</button><span id="keyStatus" class="field-hint"></span></div>
+              <p class="field-hint">密钥经 Windows 加密后保存在本机。启用 AI 时只发送 OCR 文字，不发送截图。</p>
+            </div>
+          </section>
+        </div>
+
+        <div class="modal-actions settings-actions">
+          <button type="button" class="secondary" data-close="settingsModal">取消</button>
+          <button type="submit" class="primary">保存设置</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>

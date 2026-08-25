@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'">
+  <title>选择截图区域</title>
+  <link rel="stylesheet" href="capture.css">
+</head>
+<body>
+  <canvas id="screenCanvas"></canvas>
+  <div class="dim"></div>
+  <div id="selection" class="selection hidden">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <div id="sizeLabel" class="size-label"></div>
+  </div>
+  <div class="instruction"><strong>拖动选择待识别区域</strong><span>松开完成 · Esc 取消</span></div>
+  <script src="capture.js"></script>
+</body>
+</html>
