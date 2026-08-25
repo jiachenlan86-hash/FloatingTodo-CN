@@ -1,0 +1,55 @@
+{
+  "name": "floating-todo-cn",
+  "version": "1.3.0",
+  "description": "中文优先的 Windows 悬浮截图待办工具",
+  "main": "src/main.cjs",
+  "author": "Floating Todo",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/*.test.cjs",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win portable nsis"
+  },
+  "devDependencies": {
+    "electron": "39.8.10",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.floatingtodo.cn",
+    "productName": "浮待 Todo",
+    "electronDist": "node_modules/electron/dist",
+    "asar": true,
+    "asarUnpack": [
+      "scripts/**/*"
+    ],
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "scripts/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "outputs/windows"
+    },
+    "artifactName": "FloatingTodo-${version}-${arch}.${ext}",
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        "portable",
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "artifactName": "FloatingTodo-${version}-${arch}-setup.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "浮待 Todo"
+    },
+    "portable": {
+      "artifactName": "FloatingTodo-${version}-${arch}-portable.${ext}"
+    }
+  }
+}
